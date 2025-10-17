@@ -1,6 +1,7 @@
 package database
 
 import (
+	"database/sql"
 	"fmt"
 )
 
@@ -50,4 +51,74 @@ func GetTasks(limit int) ([]*Task, error) {
 	}
 
 	return tasks, nil
+}
+
+func GetTaskById(id string) (*Task, error) {
+	var task Task
+	err := DB.QueryRow("SELECT id, date, title, comment, repeat FROM scheduler WHERE id = ?",
+		id).Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("задача не найдена")
+		}
+		return nil, fmt.Errorf("Возникла ошибка в процессе поиска задачи в бд: %v", err)
+	}
+
+	return &task, nil
+}
+
+func UpdateTask(task Task) error {
+	res, err := DB.Exec("UPDATE scheduler SET date = ?, title = ?, comment = ?, repeat = ? WHERE id = ?",
+		task.Date, task.Title, task.Comment, task.Repeat, task.ID)
+	if err != nil {
+		return fmt.Errorf("Возникла ошибка при попытке редактировать задачу: %v", err)
+	}
+
+	rowsAff, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAff == 0 {
+		return fmt.Errorf("Не найдена задача с id = %s для обновления", task.ID)
+	}
+
+	return nil
+}
+
+func DeleteTask(id string) error {
+	res, err := DB.Exec("DELETE FROM scheduler WHERE id = ?", id)
+	if err != nil {
+		return fmt.Errorf("ошибка при удалении задачи: %v", err)
+	}
+
+	rowsAff, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAff == 0 {
+		return fmt.Errorf("Задача с id %s не найдена для удаления", id)
+	}
+
+	return nil
+}
+
+func UpdateTaskDate(id, newDate string) error {
+	res, err := DB.Exec("UPDATE scheduler SET date=? WHERE id = ?",
+		newDate, id)
+
+	if err != nil {
+		return fmt.Errorf("Ошибка при попытке обновить поле date: %v", err)
+	}
+
+	rowsAff, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAff == 0 {
+		return fmt.Errorf("Задача с id %s не найдена для обновления даты", id)
+	}
+
+	return nil
 }
