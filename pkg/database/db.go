@@ -31,13 +31,13 @@ func Init(dbFile string) error {
 	DB, err = sql.Open("sqlite", dbFile)
 
 	if err != nil {
-		return fmt.Errorf("Ошибка при открытии базы данных: %v", err)
+		return fmt.Errorf("could not open database: %w", err)
 	}
 
 	if install {
 		_, err := DB.Exec(Schema)
 		if err != nil {
-			return fmt.Errorf("Ошибка при создании таблицы schedular: %v", err)
+			return fmt.Errorf("could not create schema: %w", err)
 		}
 	}
 	return nil

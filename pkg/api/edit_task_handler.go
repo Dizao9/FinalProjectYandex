@@ -43,10 +43,10 @@ func PutTaskHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	now := time.Now()
 	if task.Date == "" {
-		task.Date = now.Format("20060102")
+		task.Date = now.Format(DateFormat)
 	}
 
-	date, err := time.Parse("20060102", task.Date)
+	date, err := time.Parse(DateFormat, task.Date)
 	if err != nil {
 		writeJSONResp(w, http.StatusBadRequest, map[string]string{"error": "неверный формат времени: %v" + err.Error()})
 		return
@@ -64,7 +64,7 @@ func PutTaskHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 	} else if afterNow(now, date) {
-		task.Date = now.Format("20060102")
+		task.Date = now.Format(DateFormat)
 	}
 
 	if err = database.UpdateTask(task); err != nil {

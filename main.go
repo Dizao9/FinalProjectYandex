@@ -18,8 +18,16 @@ func getPort() string {
 	return "7540"
 }
 
+func getDBFile() string {
+	if dbFile := os.Getenv("TODO_DBFILE"); dbFile != "" {
+		return dbFile
+	}
+	return "./pkg/database/scheduler.db"
+}
+
 func main() {
-	if err := database.Init("./pkg/database/scheduler.db"); err != nil {
+	dbFile := getDBFile()
+	if err := database.Init(dbFile); err != nil {
 		log.Fatalf("Ошибка при открытии базы данных: %v", err)
 	}
 	defer database.DB.Close()
@@ -36,5 +44,9 @@ func main() {
 	})
 
 	log.Printf("Server started and listening on http://localhost:%s", port)
-	log.Fatal(http.ListenAndServe(":"+port, r))
+	err := http.ListenAndServe(":"+port, r)
+	if err != nil && err != http.ErrServerClosed {
+		log.Fatalf("Server startup error: %v", err)
+	}
+
 }
