@@ -83,6 +83,26 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 			}
 		}
 		return date.Format(DateFormat), nil
+	case "w":
+		if len(params) < 2 {
+			return "", fmt.Errorf("для правила w необходимо указать хотя бы один день недели")
+		}
+		year, month, day := date.Date()
+		paramsForW := strings.Split(params[1], ",")
+		for {
+			date = date.AddDate(0, 0, 1)
+			for i := range paramsForW {
+				paramsInt, err := strconv.Atoi(paramsForW[i])
+				if err != nil {
+					return "", fmt.Errorf("переданы неверные значения для параметра w: %w", err)
+				}
+				if int(time.Date(year, month, day, 0, 0, 0, 0, time.UTC).Weekday()) == paramsInt {
+					break
+				}
+			}
+		}
+		return date.Format(DateFormat), nil
+	case "m":
 
 	default:
 		return "", fmt.Errorf("неподдерживаемый формат правила: %s", params[0])
