@@ -87,21 +87,32 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 		if len(params) < 2 {
 			return "", fmt.Errorf("для правила w необходимо указать хотя бы один день недели")
 		}
-		year, month, day := date.Date()
+
 		paramsForW := strings.Split(params[1], ",")
+
+		parametrsInMap := make(map[int]bool, len(paramsForW))
+		for _, v := range paramsForW {
+			vInt, err := strconv.Atoi(v)
+			if err != nil {
+				return "", fmt.Errorf("Переданы неверные значения для параметра w: %w", err)
+			}
+			parametrsInMap[vInt] = true
+
+		}
+		var tzWeekDay int
 		for {
 			date = date.AddDate(0, 0, 1)
-			for i := range paramsForW {
-				paramsInt, err := strconv.Atoi(paramsForW[i])
-				if err != nil {
-					return "", fmt.Errorf("переданы неверные значения для параметра w: %w", err)
-				}
-				if int(time.Date(year, month, day, 0, 0, 0, 0, time.UTC).Weekday()) == paramsInt {
-					break
-				}
+			goWeekDay := date.Weekday()
+			if goWeekDay == time.Sunday {
+				tzWeekDay = 7
+			} else {
+				tzWeekDay = int(goWeekDay)
+			}
+
+			if parametrsInMap[tzWeekDay] && afterNow(date, now) {
+				return date.Format(DateFormat), nil
 			}
 		}
-		return date.Format(DateFormat), nil
 	case "m":
 
 	default:
