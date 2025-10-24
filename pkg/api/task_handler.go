@@ -30,10 +30,10 @@ func AddTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 	now := time.Now()
 	if task.Date == "" {
-		task.Date = now.Format(DateFormat)
+		task.Date = now.Format(database.DateFormat)
 	}
 
-	t, err := time.Parse(DateFormat, task.Date)
+	t, err := time.Parse(database.DateFormat, task.Date)
 	if err != nil {
 		writeJSONResp(w, http.StatusBadRequest, map[string]string{"error": "ошибка при парсинге даты: " + err.Error()})
 		return
@@ -52,7 +52,7 @@ func AddTaskHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		if afterNow(now, t) {
-			task.Date = now.Format(DateFormat)
+			task.Date = now.Format(database.DateFormat)
 		}
 	}
 

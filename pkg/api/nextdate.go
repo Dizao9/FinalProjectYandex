@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
-)
 
-const DateFormat = "20060102"
+	"main.go/pkg/database"
+)
 
 func afterNow(date, now time.Time) bool {
 	date = date.Truncate(24 * time.Hour)
@@ -21,7 +21,7 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 		return "", fmt.Errorf("передана пустая строка в правила повторения")
 	}
 
-	date, err := time.Parse(DateFormat, dstart)
+	date, err := time.Parse(database.DateFormat, dstart)
 	if err != nil {
 		return "", fmt.Errorf("неправильно указана дата: %v", err)
 	}
@@ -59,7 +59,7 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 				break
 			}
 		}
-		return date.Format(DateFormat), nil
+		return date.Format(database.DateFormat), nil
 
 	case "y":
 		if len(params) > 1 {
@@ -82,7 +82,7 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 				break
 			}
 		}
-		return date.Format(DateFormat), nil
+		return date.Format(database.DateFormat), nil
 	case "w":
 		if len(params) < 2 {
 			return "", fmt.Errorf("для правила w необходимо указать хотя бы один день недели")
@@ -113,7 +113,7 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 			}
 
 			if parametrsInMap[tzWeekDay] && afterNow(date, now) {
-				return date.Format(DateFormat), nil
+				return date.Format(database.DateFormat), nil
 			}
 		}
 	case "m":
@@ -169,19 +169,19 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 					dayOfMonth := date.Day()
 
 					if day[dayOfMonth] {
-						return date.Format(DateFormat), nil
+						return date.Format(database.DateFormat), nil
 					}
 
 					if useLastDay {
 						lastDay := time.Date(date.Year(), date.Month()+1, 0, 0, 0, 0, 0, time.UTC).Day()
 						if dayOfMonth == lastDay {
-							return date.Format(DateFormat), nil
+							return date.Format(database.DateFormat), nil
 						}
 					}
 					if useSecondDay {
 						secondDay := time.Date(date.Year(), date.Month()+1, -1, 0, 0, 0, 0, time.UTC).Day()
 						if dayOfMonth == secondDay {
-							return date.Format(DateFormat), nil
+							return date.Format(database.DateFormat), nil
 						}
 					}
 				}
@@ -215,7 +215,7 @@ func NextDateHandler(w http.ResponseWriter, r *http.Request) {
 	if nowParam == "" {
 		now = time.Now()
 	} else {
-		now, err = time.Parse(DateFormat, nowParam)
+		now, err = time.Parse(database.DateFormat, nowParam)
 		if err != nil {
 			http.Error(w, "Неверный формат параметра now", http.StatusBadRequest)
 			return

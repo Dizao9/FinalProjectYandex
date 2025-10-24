@@ -11,7 +11,11 @@ type TasksResp struct {
 }
 
 func GetTasksHandler(w http.ResponseWriter, r *http.Request) {
-	tasks, err := database.GetTasks(50)
+	opts := database.GetTaskOptions{
+		SearchString: r.URL.Query().Get("search"),
+		Limit:        50,
+	}
+	tasks, err := database.GetTasks(opts)
 	if err != nil {
 		writeJSONResp(w, http.StatusInternalServerError, map[string]string{"error": "ошибка при получении ближайших задач из бд: " + err.Error()})
 		return

@@ -3,7 +3,11 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"strconv"
+	"time"
 )
+
+const DateFormat = "20060102"
 
 type Task struct {
 	ID      string `json:"id,omitempty"`
@@ -11,6 +15,11 @@ type Task struct {
 	Title   string `json:"title"`
 	Comment string `json:"comment"`
 	Repeat  string `json:"repeat"`
+}
+
+type GetTaskOptions struct {
+	SearchString string
+	Limit        int
 }
 
 func AddTask(task Task) (int64, error) {
@@ -30,13 +39,28 @@ func AddTask(task Task) (int64, error) {
 	return id, nil
 }
 
-func GetTasks(limit int) ([]*Task, error) {
-	rows, err := DB.Query("SELECT id, date, title, comment, repeat FROM scheduler ORDER BY date ASC LIMIT ?",
-		limit)
-	if err != nil {
-		return nil, fmt.Errorf("could not execute select query: %w", err)
+func GetTasks(opts GetTaskOptions) ([]*Task, error) {
+	var rows *sql.Rows
+	var err error
+	sliceArg := []interface{}{}
+	var queryString string
+	limitStr := strconv.Itoa(opts.Limit)
+	if opts.SearchString != "" {
+		searchDate, err := time.Parse("02.01.2006", opts.SearchString)
+		if err != nil {
+			queryString = "SELECT id, date, title, comment, repeat FROM scheduler WHERE title LIKE ? OR comment LIKE ? ORDER BY date LIMIT ?"
+			searchPattern := "%" + opts.SearchString + "%"
+			sliceArg = append(sliceArg, searchPattern, searchPattern, limitStr)
+		} else {
+			searchDateFormat := searchDate.Format(DateFormat)
+			queryString = "SELECT id, date, title, comment, repeat FROM scheduler WHERE date = ? LIMIT ?"
+			sliceArg = append(sliceArg, searchDateFormat, limitStr)
+		}
+	} else {
+		queryString = "SELECT id, date, title, comment, repeat FROM scheduler ORDER BY date ASC LIMIT ?"
+		sliceArg = append(sliceArg, limitStr)
 	}
-
+	rows, err = DB.Query(queryString, sliceArg...)
 	defer rows.Close()
 
 	tasks := make([]*Task, 0)
