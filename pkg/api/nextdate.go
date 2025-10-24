@@ -94,7 +94,10 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 		for _, v := range paramsForW {
 			vInt, err := strconv.Atoi(v)
 			if err != nil {
-				return "", fmt.Errorf("Переданы неверные значения для параметра w: %w", err)
+				return "", fmt.Errorf("переданы неверные значения для параметра w: %w", err)
+			}
+			if vInt < 1 || vInt > 7 {
+				return "", fmt.Errorf("переданы неверные значения для параметра w, дни недели должны находиться в диапозоне от 1 до 7")
 			}
 			parametrsInMap[vInt] = true
 
@@ -114,6 +117,77 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 			}
 		}
 	case "m":
+		if len(params) < 2 {
+			return "", fmt.Errorf("для правила w необходимо указать хотя бы один день недели")
+		}
+		tempDaysForM := strings.Split(params[1], ",")
+		var tempMounthForM []string
+		var anyMonth bool = true
+		var day [32]bool
+		var month [13]bool
+		if len(params) == 3 {
+			anyMonth = false
+			tempMounthForM = strings.Split(params[2], ",")
+		}
+		var useLastDay bool
+		var useSecondDay bool
+		for _, v := range tempDaysForM {
+			digValDays, err := strconv.Atoi(v)
+			if err != nil {
+				return "", fmt.Errorf("переданы неверные параметры дней для m: %w", err)
+			}
+			switch {
+			case digValDays > 0 && digValDays <= 31:
+				day[digValDays] = true
+			case digValDays == -1:
+				useLastDay = true
+			case digValDays == -2:
+				useSecondDay = true
+			default:
+				return "", fmt.Errorf("переданы неверные параметры дней для m, необходимо указать числа от 1 до 31 или -1, -2, передано :%d", digValDays)
+			}
+		}
+
+		if !anyMonth {
+			for _, v := range tempMounthForM {
+				digValMounths, err := strconv.Atoi(v)
+				if err != nil {
+					return "", fmt.Errorf("переданы неверные параметры месяцев для m: %w", err)
+				}
+				if digValMounths < 0 {
+					month[len(month)+digValMounths] = true
+				} else {
+					month[digValMounths] = true
+				}
+			}
+		}
+
+		for i := 0; i < 3650; i++ {
+			date = date.AddDate(0, 0, 1)
+			if afterNow(date, now) {
+				if anyMonth || month[date.Month()] {
+					dayOfMonth := date.Day()
+
+					if day[dayOfMonth] {
+						return date.Format(DateFormat), nil
+					}
+
+					if useLastDay {
+						lastDay := time.Date(date.Year(), date.Month()+1, 0, 0, 0, 0, 0, time.UTC).Day()
+						if dayOfMonth == lastDay {
+							return date.Format(DateFormat), nil
+						}
+					}
+					if useSecondDay {
+						secondDay := time.Date(date.Year(), date.Month()+1, -1, 0, 0, 0, 0, time.UTC).Day()
+						if dayOfMonth == secondDay {
+							return date.Format(DateFormat), nil
+						}
+					}
+				}
+			}
+		}
+		return "", fmt.Errorf("возникла ошибка в процессе, цикл завершился без результата")
 
 	default:
 		return "", fmt.Errorf("неподдерживаемый формат правила: %s", params[0])
